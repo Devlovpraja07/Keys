@@ -2,44 +2,237 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Key Generator</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BGMI iOS Toolkit</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+        }
+
         body {
-            background: linear-gradient(135deg, #1f1c2c, #928dab);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
         }
-        .container {
-            background: rgba(255, 255, 255, 0.1);
+
+        .ios-container {
+            max-width: 500px;
+            margin: 0 auto;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+            padding-top: 80px;
         }
-        input {
+
+        .ios-navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: #1c1c1e;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 0.5px solid #2c2c2e;
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+        }
+
+        .system-stats {
+            display: flex;
+            gap: 15px;
+            color: #86868b;
+            font-size: 0.9em;
+        }
+
+        .ios-card {
+            background: #1c1c1e;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 0.5px solid #2c2c2e;
+        }
+
+        .ios-button {
+            background: #3a3a3c;
+            color: #0a84ff;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1em;
+            margin: 5px 0;
+            transition: background 0.2s;
+        }
+
+        .ios-button:active {
+            background: #2c2c2e;
+        }
+
+        .progress-container {
+            background: #2c2c2e;
+            height: 5px;
+            border-radius: 3px;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #0a84ff;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .ios-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1c1c1e;
+            width: 270px;
+            border-radius: 14px;
+            padding: 20px;
             text-align: center;
-            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 1001;
+        }
+
+        .ios-alert-buttons {
+            display: flex;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .ios-alert-button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            background: #3a3a3c;
+            color: #0a84ff;
+        }
+
+        .ios-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #3a3a3c;
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: 10px;
+            display: none;
+            backdrop-filter: blur(20px);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>🔑 Key Generator</h2>
-        <p>Click the button to generate a key</p>
-        <input type="text" id="keyInput" class="form-control mb-3" readonly>
-        <button class="btn btn-success" onclick="generateKey()">Generate Key</button>
+    <nav class="ios-navbar">
+        <div class="system-stats" id="systemStats">
+            <span>RAM: <span id="ramValue">64%</span></span>
+            <span>Boost: <span id="boostValue">82%</span></span>
+        </div>
+        <button class="ios-button" style="width: auto" onclick="showAuthModal()">Login</button>
+    </nav>
+
+    <div class="ios-container">
+        <div class="ios-card">
+            <h2>Game Booster</h2>
+            <div class="progress-container">
+                <div class="progress-bar" id="boostProgress" style="width: 82%"></div>
+            </div>
+            <button class="ios-button" onclick="optimizePerformance()">Optimize Now</button>
+        </div>
+
+        <div class="ios-card">
+            <h2>Master Key</h2>
+            <button class="ios-button" onclick="showCopyAlert()">Just9-ZizLHO1</button>
+        </div>
     </div>
 
+    <!-- iOS Style Alert -->
+    <div class="ios-alert" id="copyAlert">
+        <h3>Confirm Copy</h3>
+        <p>Are you sure you want to copy this key?</p>
+        <div class="ios-alert-buttons">
+            <button class="ios-alert-button" onclick="hideAlert()">Cancel</button>
+            <button class="ios-alert-button" style="background: #0a84ff; color: #fff" onclick="confirmCopy()">Copy</button>
+        </div>
+    </div>
+
+    <!-- iOS Style Toast -->
+    <div class="ios-toast" id="copyToast">✓ Copied to Clipboard</div>
+
     <script>
-        function generateKey() {
-            const key = "Just9-ZizLHO1";
-            document.getElementById("keyInput").value = key;
+        // System Monitoring
+        function updateSystemStats() {
+            if (isMobileBrowser()) {
+                // Simulated values for mobile detection
+                document.getElementById('ramValue').textContent = `${Math.floor(Math.random() * 20 + 60)}%`;
+                document.getElementById('boostValue').textContent = `${Math.floor(Math.random() * 15 + 75)}%`;
+            }
         }
+
+        // Browser Detection
+        function isMobileBrowser() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // Copy Functions
+        function showCopyAlert() {
+            document.getElementById('copyAlert').style.display = 'block';
+        }
+
+        function hideAlert() {
+            document.getElementById('copyAlert').style.display = 'none';
+        }
+
+        function confirmCopy() {
+            navigator.clipboard.writeText('Just9-ZizLHO1').then(() => {
+                showToast();
+                hideAlert();
+            }).catch(() => {
+                alert('Failed to copy. Please manually select and copy.');
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('copyToast');
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        }
+
+        // Performance Optimization
+        function optimizePerformance() {
+            const boostProgress = document.getElementById('boostProgress');
+            boostProgress.style.width = '100%';
+            
+            setTimeout(() => {
+                boostProgress.style.width = '82%';
+                updateSystemStats();
+            }, 1500);
+        }
+
+        // Auto-detect and Update
+        if (isMobileBrowser()) {
+            document.body.classList.add('mobile');
+            setInterval(updateSystemStats, 3000);
+        } else {
+            document.querySelector('.system-stats').innerHTML += '<span>Browser Mode</span>';
+        }
+
+        // iOS Haptic Feedback
+        function iosHaptic() {
+            if (window.navigator.vibrate) navigator.vibrate(10);
+        }
+
+        // Add haptic to all buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', iosHaptic);
+        });
     </script>
 </body>
 </html>
