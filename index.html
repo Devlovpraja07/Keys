@@ -3,154 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon App Suite</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Premium Key Generator</title>
     <style>
-        :root {
-            --neon-blue: #00f3ff;
-            --neon-pink: #ff00ff;
-            --neon-purple: #bc13fe;
-            --bg-color: #0a0a0f;
-        }
         body {
-            background: var(--bg-color);
-            color: var(--neon-blue);
-            font-family: 'Courier New', monospace;
-            min-height: 100vh;
+            background-color: #0d0d0d;
+            color: #00ffcc;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            perspective: 1000px;
         }
-        .nav-bar {
-            display: flex;
-            justify-content: space-between;
-            padding: 1rem 2rem;
-            background: linear-gradient(45deg, #1a1a2f, #0a0a1f);
-            border-bottom: 2px solid var(--neon-purple);
-            box-shadow: 0 0 20px var(--neon-purple);
-        }
-        .auth-section button, .copy-btn {
-            background: none;
-            border: 2px solid var(--neon-blue);
-            padding: 0.5rem 1.5rem;
-            border-radius: 5px;
-            color: var(--neon-blue);
-            cursor: pointer;
-            transition: 0.3s ease-in-out;
-        }
-        .auth-section button:hover, .copy-btn:hover {
-            background: var(--neon-blue);
-            color: var(--bg-color);
-            box-shadow: 0 0 20px var(--neon-blue);
-        }
+
         .container {
-            max-width: 1200px;
-            margin: auto;
-            padding: 2rem;
-        }
-        .tool-card {
-            background: rgba(16, 16, 32, 0.9);
-            border: 2px solid var(--neon-purple);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
             border-radius: 10px;
-            padding: 2rem;
-            margin: 2rem 0;
-            box-shadow: 0 0 30px rgba(188, 19, 254, 0.2);
+            box-shadow: 0 0 20px #00ffcc;
+            display: inline-block;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
         }
-        .key-box {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            background: #111126;
-            padding: 1rem;
+
+        .container:hover {
+            transform: rotateY(10deg) rotateX(10deg);
+        }
+
+        .key {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px;
+            background: #1a1a1a;
             border-radius: 5px;
-            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 10px #00ffcc;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .copy-btn {
+            background: #00ffcc;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 0 10px #00ffcc;
+            transition: 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #00cc99;
+            box-shadow: 0 0 20px #00ffcc;
+        }
+
+        /* Pop-up Styles */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #000;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px #00ffcc;
+            text-align: center;
+            z-index: 1000;
+        }
+
+        .popup button {
+            margin: 10px;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        .confirm-btn {
+            background: #00ffcc;
+            color: #000;
+            box-shadow: 0 0 10px #00ffcc;
+        }
+
+        .confirm-btn:hover {
+            background: #00cc99;
+        }
+
+        .cancel-btn {
+            background: red;
+            color: white;
+            box-shadow: 0 0 10px red;
+        }
+
+        .cancel-btn:hover {
+            background: darkred;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                width: 90%;
+            }
+            .key {
+                font-size: 20px;
+            }
+            .copy-btn {
+                font-size: 16px;
+            }
+            .popup {
+                width: 80%;
+            }
         }
     </style>
 </head>
 <body>
-    <nav class="nav-bar">
-        <h2>NEON APP SUITE</h2>
-        <div class="auth-section">
-            <button id="authButton">Login with Google</button>
-        </div>
-    </nav>
 
     <div class="container">
-        <div class="tool-card">
-            <h2>🔀 PNG to PDF Converter</h2>
-            <input type="file" id="pngInput" accept="image/png">
-            <button onclick="convertToPDF()" class="copy-btn">Convert & Download</button>
-        </div>
+        <div class="key" id="key">Just9-FzlHfh1</div>
+        <br>
+        <button class="copy-btn" onclick="showPopup()">Copy Key</button>
+    </div>
 
-        <div class="tool-card">
-            <h2>🔑 API Key Generator</h2>
-            <div class="key-box">
-                <span id="generatedKey">Click to generate</span>
-                <button class="copy-btn" onclick="copyKey()">Copy</button>
-            </div>
-        </div>
+    <!-- Pop-up Confirmation -->
+    <div class="popup" id="popup">
+        <p>Are you sure you want to copy the key?</p>
+        <button class="confirm-btn" onclick="copyKey()">✅ Confirm</button>
+        <button class="cancel-btn" onclick="hidePopup()">❌ Cancel</button>
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDummyKey1234567890",
-            authDomain: "your-project.firebaseapp.com",
-            projectId: "your-project",
-            storageBucket: "your-project.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abc123def456"
-        };
-
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
-        document.getElementById('authButton').addEventListener('click', () => {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
-                .then((result) => console.log('Signed in:', result.user))
-                .catch((error) => console.error('Authentication error:', error));
-        });
-
-        auth.onAuthStateChanged(user => {
-            const btn = document.getElementById('authButton');
-            btn.textContent = user ? `Logout (${user.email})` : 'Login with Google';
-            btn.onclick = user ? () => auth.signOut() : () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-        });
-
-        function convertToPDF() {
-            const fileInput = document.getElementById('pngInput');
-            if (!fileInput.files[0]) return alert('Please select a PNG file!');
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = function() {
-                    const pdf = new jsPDF();
-                    pdf.addImage(img, 'PNG', 0, 0, 210, 297);
-                    pdf.save('converted.pdf');
-                };
-            };
-            reader.readAsDataURL(fileInput.files[0]);
+        function showPopup() {
+            document.getElementById("popup").style.display = "block";
         }
 
-        document.querySelector('.key-box').addEventListener('click', function() {
-            const keyElement = document.getElementById('generatedKey');
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let key = '';
-            for (let i = 0; i < 16; i++) {
-                key += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            keyElement.textContent = key;
-        });
+        function hidePopup() {
+            document.getElementById("popup").style.display = "none";
+        }
 
         function copyKey() {
-            const key = document.getElementById('generatedKey').textContent;
-            navigator.clipboard.writeText(key)
-                .then(() => alert('Key copied to clipboard!'))
-                .catch(() => alert('Failed to copy key!'));
+            const keyText = document.getElementById("key").textContent;
+            navigator.clipboard.writeText(keyText).then(() => {
+                alert("Key copied to clipboard!");
+                hidePopup();
+            });
         }
     </script>
+
 </body>
 </html>
