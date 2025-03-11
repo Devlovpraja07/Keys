@@ -13,22 +13,11 @@
             margin: 0;
             padding: 20px;
         }
-        h1 {
-            color: #4CAF50;
-        }
-        #counter {
-            font-size: 48px;
-            margin: 20px;
-            transition: all 0.2s ease-in-out;
-        }
+        h1 { color: #4CAF50; }
+        #counter { font-size: 48px; margin: 20px; transition: all 0.2s ease-in-out; }
         button {
-            font-size: 20px;
-            padding: 12px 25px;
-            margin: 10px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: 0.2s;
+            font-size: 20px; padding: 12px 25px; margin: 10px; border: none;
+            cursor: pointer; border-radius: 5px; transition: 0.2s;
         }
         .increment { background-color: #4CAF50; color: white; }
         .reset { background-color: #f44336; color: white; }
@@ -38,43 +27,92 @@
 </head>
 <body>
     <h1>Tasbih Counter</h1>
-    <div id="counter">0</div>
-    <button class="increment" onclick="increment()">+1</button>
-    <button class="reset" onclick="resetCounter()">Reset</button>
-    <button class="save" onclick="saveCount()">Save Count</button>
+
+    <div id="auth">
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="signup()">Signup</button>
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div id="counterSection" style="display: none;">
+        <div id="counter">0</div>
+        <button class="increment" onclick="increment()">+1</button>
+        <button class="reset" onclick="resetCounter()">Reset</button>
+        <button class="save" onclick="saveCount()">Save Count</button>
+    </div>
 
     <script>
         let count = 0;
+        let username = localStorage.getItem("username");
 
-        // ✅ Load saved count from LocalStorage
-        if (localStorage.getItem("tasbihCount")) {
-            count = parseInt(localStorage.getItem("tasbihCount"));
-            document.getElementById("counter").innerText = count;
+        if (username) {
+            document.getElementById("auth").style.display = "none";
+            document.getElementById("counterSection").style.display = "block";
+            fetch(`http://127.0.0.1:5000/get_user/${username}`)
+                .then(res => res.json())
+                .then(data => {
+                    count = data.tasbih_count || 0;
+                    document.getElementById("counter").innerText = count;
+                });
+        }
+
+        function signup() {
+            let user = document.getElementById("username").value;
+            let pass = document.getElementById("password").value;
+
+            fetch("http://127.0.0.1:5000/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: user, password: pass })
+            })
+            .then(res => res.json())
+            .then(data => alert(data.message))
+            .catch(err => alert("Error: Could not signup"));
+        }
+
+        function login() {
+            let user = document.getElementById("username").value;
+            let pass = document.getElementById("password").value;
+
+            fetch("http://127.0.0.1:5000/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: user, password: pass })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.message === "Login Successful!") {
+                    localStorage.setItem("username", user);
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(err => alert("Error: Could not login"));
         }
 
         function increment() {
             count++;
             document.getElementById("counter").innerText = count;
-            localStorage.setItem("tasbihCount", count); // Save to Local Storage
         }
 
         function resetCounter() {
-            if (confirm("Are you sure you want to reset the counter?")) {
+            if (confirm("Are you sure you want to reset?")) {
                 count = 0;
                 document.getElementById("counter").innerText = count;
-                localStorage.setItem("tasbihCount", count); // Reset Local Storage
             }
         }
 
         function saveCount() {
-            fetch('http://127.0.0.1:5000/save_count', {  // Local Flask backend
+            fetch('http://127.0.0.1:5000/save_count', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ count: count })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: localStorage.getItem("username"), count: count })
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => alert(data.message))
-            .catch(error => alert("Error: Cannot save count! Make sure Flask is running."));
+            .catch(err => alert("Error: Cannot save count"));
         }
     </script>
 </body>
