@@ -19,18 +19,21 @@
         #counter {
             font-size: 48px;
             margin: 20px;
+            transition: all 0.2s ease-in-out;
         }
         button {
             font-size: 20px;
-            padding: 10px 20px;
+            padding: 12px 25px;
             margin: 10px;
             border: none;
             cursor: pointer;
             border-radius: 5px;
+            transition: 0.2s;
         }
         .increment { background-color: #4CAF50; color: white; }
         .reset { background-color: #f44336; color: white; }
         .save { background-color: #008CBA; color: white; }
+        button:hover { opacity: 0.8; transform: scale(1.1); }
     </style>
 </head>
 <body>
@@ -43,14 +46,24 @@
     <script>
         let count = 0;
 
-        function increment() {
-            count++;
+        // ✅ Load saved count from LocalStorage
+        if (localStorage.getItem("tasbihCount")) {
+            count = parseInt(localStorage.getItem("tasbihCount"));
             document.getElementById("counter").innerText = count;
         }
 
-        function resetCounter() {
-            count = 0;
+        function increment() {
+            count++;
             document.getElementById("counter").innerText = count;
+            localStorage.setItem("tasbihCount", count); // Save to Local Storage
+        }
+
+        function resetCounter() {
+            if (confirm("Are you sure you want to reset the counter?")) {
+                count = 0;
+                document.getElementById("counter").innerText = count;
+                localStorage.setItem("tasbihCount", count); // Reset Local Storage
+            }
         }
 
         function saveCount() {
