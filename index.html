@@ -3,152 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Key Generator</title>
+    <title>Tasbih Counter</title>
     <style>
         body {
-            background-color: #0d0d0d;
-            color: #00ffcc;
             font-family: Arial, sans-serif;
             text-align: center;
-            padding: 50px;
-            perspective: 1000px;
-        }
-
-        .container {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px #00ffcc;
-            display: inline-block;
-            transform-style: preserve-3d;
-            transition: transform 0.5s;
-        }
-
-        .container:hover {
-            transform: rotateY(10deg) rotateX(10deg);
-        }
-
-        .key {
-            font-size: 24px;
-            font-weight: bold;
-            padding: 10px;
-            background: #1a1a1a;
-            border-radius: 5px;
-            box-shadow: 0 0 10px #00ffcc;
-            display: inline-block;
-            margin-bottom: 15px;
-        }
-
-        .copy-btn {
-            background: #00ffcc;
-            color: #000;
-            border: none;
-            padding: 10px 20px;
-            font-size: 18px;
-            cursor: pointer;
-            border-radius: 5px;
-            box-shadow: 0 0 10px #00ffcc;
-            transition: 0.3s;
-        }
-
-        .copy-btn:hover {
-            background: #00cc99;
-            box-shadow: 0 0 20px #00ffcc;
-        }
-
-        /* Pop-up Styles */
-        .popup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #000;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px #00ffcc;
-            text-align: center;
-            z-index: 1000;
-        }
-
-        .popup button {
-            margin: 10px;
-            padding: 10px 15px;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-
-        .confirm-btn {
-            background: #00ffcc;
-            color: #000;
-            box-shadow: 0 0 10px #00ffcc;
-        }
-
-        .confirm-btn:hover {
-            background: #00cc99;
-        }
-
-        .cancel-btn {
-            background: red;
+            background-color: #121212;
             color: white;
-            box-shadow: 0 0 10px red;
+            margin: 0;
+            padding: 20px;
         }
-
-        .cancel-btn:hover {
-            background: darkred;
+        h1 {
+            color: #4CAF50;
         }
-
-        @media (max-width: 600px) {
-            .container {
-                width: 90%;
-            }
-            .key {
-                font-size: 20px;
-            }
-            .copy-btn {
-                font-size: 16px;
-            }
-            .popup {
-                width: 80%;
-            }
+        #counter {
+            font-size: 48px;
+            margin: 20px;
         }
+        button {
+            font-size: 20px;
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .increment { background-color: #4CAF50; color: white; }
+        .reset { background-color: #f44336; color: white; }
+        .save { background-color: #008CBA; color: white; }
     </style>
 </head>
 <body>
-
-    <div class="container">
-        <div class="key" id="key">Just9-5UAyNTO</div>
-        <br>
-        <button class="copy-btn" onclick="showPopup()">Copy Key</button>
-    </div>
-
-    <!-- Pop-up Confirmation -->
-    <div class="popup" id="popup">
-        <p>Are you sure you want to copy the key?</p>
-        <button class="confirm-btn" onclick="copyKey()">✅ Confirm</button>
-        <button class="cancel-btn" onclick="hidePopup()">❌ Cancel</button>
-    </div>
+    <h1>Tasbih Counter</h1>
+    <div id="counter">0</div>
+    <button class="increment" onclick="increment()">+1</button>
+    <button class="reset" onclick="resetCounter()">Reset</button>
+    <button class="save" onclick="saveCount()">Save Count</button>
 
     <script>
-        function showPopup() {
-            document.getElementById("popup").style.display = "block";
+        let count = 0;
+
+        function increment() {
+            count++;
+            document.getElementById("counter").innerText = count;
         }
 
-        function hidePopup() {
-            document.getElementById("popup").style.display = "none";
+        function resetCounter() {
+            count = 0;
+            document.getElementById("counter").innerText = count;
         }
 
-        function copyKey() {
-            const keyText = document.getElementById("key").textContent;
-            navigator.clipboard.writeText(keyText).then(() => {
-                alert("Key copied to clipboard!");
-                hidePopup();
-            });
+        function saveCount() {
+            fetch('http://127.0.0.1:5000/save_count', {  // Local Flask backend
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ count: count })
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(error => alert("Error: Cannot save count! Make sure Flask is running."));
         }
     </script>
-
 </body>
 </html>
