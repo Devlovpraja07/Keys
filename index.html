@@ -23,6 +23,7 @@
         .reset { background-color: #f44336; color: white; }
         .save { background-color: #008CBA; color: white; }
         button:hover { opacity: 0.8; transform: scale(1.1); }
+        .logout { background-color: #ff9800; color: white; }
     </style>
 </head>
 <body>
@@ -36,10 +37,12 @@
     </div>
 
     <div id="counterSection" style="display: none;">
+        <h2>Welcome, <span id="userDisplay"></span></h2>
         <div id="counter">0</div>
         <button class="increment" onclick="increment()">+1</button>
         <button class="reset" onclick="resetCounter()">Reset</button>
         <button class="save" onclick="saveCount()">Save Count</button>
+        <button class="logout" onclick="logout()">Logout</button>
     </div>
 
     <script>
@@ -49,12 +52,15 @@
         if (username) {
             document.getElementById("auth").style.display = "none";
             document.getElementById("counterSection").style.display = "block";
+            document.getElementById("userDisplay").innerText = username;
+
             fetch(`http://127.0.0.1:5000/get_user/${username}`)
                 .then(res => res.json())
                 .then(data => {
                     count = data.tasbih_count || 0;
                     document.getElementById("counter").innerText = count;
-                });
+                })
+                .catch(err => console.error("Error fetching user data"));
         }
 
         function signup() {
@@ -113,6 +119,11 @@
             .then(res => res.json())
             .then(data => alert(data.message))
             .catch(err => alert("Error: Cannot save count"));
+        }
+
+        function logout() {
+            localStorage.removeItem("username");
+            location.reload();
         }
     </script>
 </body>
