@@ -86,14 +86,6 @@
 <body>
     <h1>Tasbih Counter</h1>
 
-    <div class="input-container">
-        <label>Username: <input type="text" id="username" placeholder="Enter your username"></label>
-        <label>Password: <input type="password" id="password" placeholder="Enter your password"></label>
-    </div>
-
-    <button class="btn" onclick="signup()">Signup</button>
-    <button class="btn" onclick="login()">Login</button>
-
     <div class="counter" id="count">0</div>
 
     <button class="btn increment" onclick="increment()">+1</button>
@@ -132,50 +124,8 @@
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
         }
 
-        function signup() {
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
-
-            if (!username || !password) {
-                alert("Enter username and password!");
-                return;
-            }
-
-            fetch("http://127.0.0.1:5000/signup", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: `username=${username}&password=${password}`
-            })
-            .then(response => response.json())
-            .then(data => alert(data.message || data.error))
-            .catch(error => console.error("Error:", error));
-        }
-
-        function login() {
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
-
-            if (!username || !password) {
-                alert("Enter username and password!");
-                return;
-            }
-
-            fetch("http://127.0.0.1:5000/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: `username=${username}&password=${password}`
-            })
-            .then(response => response.json())
-            .then(data => alert(data.message || data.error))
-            .catch(error => console.error("Error:", error));
-        }
-
         function saveData() {
-            const username = document.getElementById("username").value;
-            if (!username) {
-                alert("Enter Username!");
-                return;
-            }
+            const username = "default_user"; // Replace with actual username if needed
 
             const formData = new FormData();
             formData.append("username", username);
