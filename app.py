@@ -1,96 +1,83 @@
-from flask import Flask, request, jsonify
-import sqlite3
-import os
+from flask import Flask, render_template, request, redirect, url_for, session
 
 app = Flask(__name__)
+app.secret_key = "your_secret_key"
 
-# 📌 Database Initialization
-DB_FILE = "users.db"
+# Store user data in a text file
+USER_FILE = "users.txt"
 
-def init_db():
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password TEXT,
-            tasbih_count INTEGER DEFAULT 0
-        )
-    ''')
-    conn.commit()
-    conn.close()
+# Save user data to a text file
+def save_user(username, password):
+    with open(USER_FILE, "a") as file:
+        file.write(f"{username},{password}\n")
 
-init_db()  # Initialize DB at start
-
-# 📌 Signup Route
-@app.route('/signup', methods=['POST'])
-def signup():
-    data = request.json
-    username = data.get("username")
-    password = data.get("password")
-
-    if not username or not password:
-        return jsonify({"error": "Username & Password required!"}), 400
-
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    
+# Check if user exists in the text file
+def user_exists(username, password):
     try:
-        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
-        conn.commit()
-        return jsonify({"message": "Signup Successful!"}), 201
-    except sqlite3.IntegrityError:
-        return jsonify({"error": "Username already exists!"}), 409
-    finally:
-        conn.close()
+        with open(USER_FILE, "r") as file:
+            users = file.readlines()
+            for user in users:
+                saved_username, saved_password = user.strip().split(",")
+                if saved_username == username and saved_password == password:
+                    return True
+    except FileNotFoundError:
+        return False
+    return False
 
-# 📌 Login Route
-@app.route('/login', methods=['POST'])
+@app.route("/")
+def home():
+    if "user" in session:
+        return render_template("index.html", username=session["user"])
+    return redirect(url_for("login"))
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    data = request.json
-    username = data.get("username")
-    password = data.get("password")
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
 
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM users WHERE username=? AND password=?", (username, password))
-    user = cursor.fetchone()
-    conn.close()
+        if user_exists(username, password):
+            session["user"] = username
+            return redirect(url_for("home"))
+        else:
+            return "Invalid Credentials. Try Again!"
 
-    if user:
-        return jsonify({"message": "Login Successful!", "username": username}), 200
-    else:
-        return jsonify({"error": "Invalid Credentials!"}), 401
+    return '''
+    <h2>Login</h2>
+    <form method="POST">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+    <p>Don't have an account? <a href="/signup">Signup here</a></p>
+    '''
 
-# 📌 Save Tasbih Count
-@app.route('/save_count', methods=['POST'])
-def save_count():
-    data = request.json
-    username = data.get("username")
-    count = data.get("count")
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
 
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE users SET tasbih_count=? WHERE username=?", (count, username))
-    conn.commit()
-    conn.close()
+        if not user_exists(username, password):
+            save_user(username, password)
+            return redirect(url_for("login"))
+        else:
+            return "Username already exists!"
 
-    return jsonify({"message": "Tasbih Count Saved!"}), 200
+    return '''
+    <h2>Signup</h2>
+    <form method="POST">
+        <input type="text" name="username" placeholder="Choose Username" required>
+        <input type="password" name="password" placeholder="Choose Password" required>
+        <button type="submit">Signup</button>
+    </form>
+    <p>Already have an account? <a href="/login">Login here</a></p>
+    '''
 
-# 📌 Get User Data
-@app.route('/get_user/<username>', methods=['GET'])
-def get_user(username):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT tasbih_count FROM users WHERE username=?", (username,))
-    user = cursor.fetchone()
-    conn.close()
+@app.route("/logout")
+def logout():
+    session.pop("user", None)
+    return redirect(url_for("login"))
 
-    if user:
-        return jsonify({"username": username, "tasbih_count": user[0]}), 200
-    else:
-        return jsonify({"error": "User Not Found"}), 404
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
