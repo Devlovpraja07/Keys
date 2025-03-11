@@ -4,127 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tasbih Counter</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #121212;
-            color: white;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 { color: #4CAF50; }
-        #counter { font-size: 48px; margin: 20px; transition: all 0.2s ease-in-out; }
-        button {
-            font-size: 20px; padding: 12px 25px; margin: 10px; border: none;
-            cursor: pointer; border-radius: 5px; transition: 0.2s;
-        }
-        .increment { background-color: #4CAF50; color: white; }
-        .reset { background-color: #f44336; color: white; }
-        .save { background-color: #008CBA; color: white; }
-        button:hover { opacity: 0.8; transform: scale(1.1); }
-        .logout { background-color: #ff9800; color: white; }
-    </style>
 </head>
 <body>
-    <h1>Tasbih Counter</h1>
-
-    <div id="auth">
-        <input type="text" id="username" placeholder="Username">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="signup()">Signup</button>
-        <button onclick="login()">Login</button>
-    </div>
-
-    <div id="counterSection" style="display: none;">
-        <h2>Welcome, <span id="userDisplay"></span></h2>
-        <div id="counter">0</div>
-        <button class="increment" onclick="increment()">+1</button>
-        <button class="reset" onclick="resetCounter()">Reset</button>
-        <button class="save" onclick="saveCount()">Save Count</button>
-        <button class="logout" onclick="logout()">Logout</button>
-    </div>
+    <h2>Welcome, {{ username }}</h2>
+    <h3>Tasbih Counter</h3>
+    <p id="counter">0</p>
+    <button onclick="increaseCounter()">Count</button>
+    <button onclick="resetCounter()">Reset</button>
+    <br>
+    <a href="/logout">Logout</a>
 
     <script>
         let count = 0;
-        let username = localStorage.getItem("username");
-
-        if (username) {
-            document.getElementById("auth").style.display = "none";
-            document.getElementById("counterSection").style.display = "block";
-            document.getElementById("userDisplay").innerText = username;
-
-            fetch(`http://127.0.0.1:5000/get_user/${username}`)
-                .then(res => res.json())
-                .then(data => {
-                    count = data.tasbih_count || 0;
-                    document.getElementById("counter").innerText = count;
-                })
-                .catch(err => console.error("Error fetching user data"));
-        }
-
-        function signup() {
-            let user = document.getElementById("username").value;
-            let pass = document.getElementById("password").value;
-
-            fetch("http://127.0.0.1:5000/signup", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: user, password: pass })
-            })
-            .then(res => res.json())
-            .then(data => alert(data.message))
-            .catch(err => alert("Error: Could not signup"));
-        }
-
-        function login() {
-            let user = document.getElementById("username").value;
-            let pass = document.getElementById("password").value;
-
-            fetch("http://127.0.0.1:5000/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: user, password: pass })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.message === "Login Successful!") {
-                    localStorage.setItem("username", user);
-                    location.reload();
-                } else {
-                    alert(data.error);
-                }
-            })
-            .catch(err => alert("Error: Could not login"));
-        }
-
-        function increment() {
+        function increaseCounter() {
             count++;
             document.getElementById("counter").innerText = count;
+            localStorage.setItem("tasbih_count", count);
         }
-
         function resetCounter() {
-            if (confirm("Are you sure you want to reset?")) {
-                count = 0;
+            count = 0;
+            document.getElementById("counter").innerText = count;
+            localStorage.setItem("tasbih_count", count);
+        }
+        window.onload = function() {
+            let savedCount = localStorage.getItem("tasbih_count");
+            if (savedCount) {
+                count = parseInt(savedCount);
                 document.getElementById("counter").innerText = count;
             }
-        }
-
-        function saveCount() {
-            fetch('http://127.0.0.1:5000/save_count', {
-                method: 'POST',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: localStorage.getItem("username"), count: count })
-            })
-            .then(res => res.json())
-            .then(data => alert(data.message))
-            .catch(err => alert("Error: Cannot save count"));
-        }
-
-        function logout() {
-            localStorage.removeItem("username");
-            location.reload();
-        }
+        };
     </script>
 </body>
 </html>
