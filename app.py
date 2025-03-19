@@ -1,72 +1,75 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
-import os
+from flask import Flask, request, jsonify
+import requests
+import json
 
 app = Flask(__name__)
 
-DATA_FILE = "data.txt"
-USER_FILE = "users.txt"
+# Supabase Configuration
+SUPABASE_URL = "https://bzzkdkhwvmzuipfqfvxi.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+SUPABASE_TABLE = "products"
 
-# Function to save user data
-def save_data(username, tasbih_count, image_path):
-    with open(DATA_FILE, "a") as file:
-        file.write(f"{username},{tasbih_count},{image_path}\n")
+HEADERS = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json"
+}
 
-# Function to save new users
-def save_user(username, password):
-    with open(USER_FILE, "a") as file:
-        file.write(f"{username},{password}\n")
+# Local Storage Backup File
+LOCAL_STORAGE_FILE = "local_products.json"
 
-# Function to check user login
-def check_user(username, password):
-    if os.path.exists(USER_FILE):
-        with open(USER_FILE, "r") as file:
-            users = file.readlines()
-            for user in users:
-                saved_username, saved_password = user.strip().split(",")
-                if saved_username == username and saved_password == password:
-                    return True
-    return False
+# Function to Save Local Data
+def save_local_data(data):
+    with open(LOCAL_STORAGE_FILE, "w") as file:
+        json.dump(data, file)
 
-@app.route("/")
-def home():
-    return render_template("index.html")
+# Function to Load Local Data
+def load_local_data():
+    try:
+        with open(LOCAL_STORAGE_FILE, "r") as file:
+            return json.load(file)
+    except:
+        return []
 
-@app.route("/signup", methods=["POST"])
-def signup():
-    username = request.form.get("username")
-    password = request.form.get("password")
+# 📌 **Get All Products**
+@app.route('/products', methods=['GET'])
+def get_products():
+    try:
+        response = requests.get(f"{SUPABASE_URL}/rest/v1/{SUPABASE_TABLE}", headers=HEADERS)
+        if response.status_code == 200:
+            return jsonify(response.json()), 200
+        else:
+            return jsonify(load_local_data()), 200
+    except:
+        return jsonify(load_local_data()), 200
 
-    if username and password:
-        save_user(username, password)
-        return jsonify({"message": "Signup successful!"})
+# 📌 **Add New Product**
+@app.route('/products', methods=['POST'])
+def add_product():
+    try:
+        data = request.json
+        response = requests.post(f"{SUPABASE_URL}/rest/v1/{SUPABASE_TABLE}", headers=HEADERS, json=[data])
+        if response.status_code == 201:
+            return jsonify({"message": "Product Added!"}), 201
+    except:
+        products = load_local_data()
+        products.append(data)
+        save_local_data(products)
+        return jsonify({"message": "Saved Locally!"}), 200
 
-    return jsonify({"error": "Could not signup"})
+# 📌 **Delete Product**
+@app.route('/products/<int:product_id>', methods=['DELETE'])
+def delete_product(product_id):
+    try:
+        response = requests.delete(f"{SUPABASE_URL}/rest/v1/{SUPABASE_TABLE}?id=eq.{product_id}", headers=HEADERS)
+        if response.status_code == 204:
+            return jsonify({"message": "Product Deleted!"}), 200
+    except:
+        products = load_local_data()
+        products = [p for p in products if p.get("id") != product_id]
+        save_local_data(products)
+        return jsonify({"message": "Deleted Locally!"}), 200
 
-@app.route("/login", methods=["POST"])
-def login():
-    username = request.form.get("username")
-    password = request.form.get("password")
-
-    if check_user(username, password):
-        return jsonify({"message": "Login successful!"})
-
-    return jsonify({"error": "Invalid login credentials"})
-
-@app.route("/save", methods=["POST"])
-def save():
-    username = request.form.get("username")
-    tasbih_count = request.form.get("tasbih_count")
-    image_data = request.files.get("image")
-
-    if username and tasbih_count and image_data:
-        image_path = f"static/uploads/{username}.png"
-        os.makedirs("static/uploads", exist_ok=True)
-        image_data.save(image_path)
-
-        save_data(username, tasbih_count, image_path)
-        return jsonify({"message": "Data saved successfully!", "image": image_path})
-
-    return jsonify({"error": "Invalid data!"})
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0")
+# 📌 **Run Flask Server**
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
