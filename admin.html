@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Sathi Store</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #f3f4f6; padding: 2rem; }
+        .container { max-width: 600px; background: white; padding: 2rem; border-radius: 10px; margin: 0 auto; }
+        h2 { text-align: center; color: #2563eb; }
+        input, button { width: 100%; padding: 0.8rem; margin: 0.5rem 0; }
+        button { background: #2563eb; color: white; cursor: pointer; }
+        .product-list { margin-top: 1.5rem; }
+        .product-item { background: #e5e7eb; padding: 1rem; display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📦 Admin Panel</h2>
+        <input type="text" id="productName" placeholder="Product Name">
+        <input type="number" id="productPrice" placeholder="Price (₹)">
+        <input type="url" id="productImage" placeholder="Image URL">
+        <button onclick="addProduct()">Add Product</button>
+        <div class="product-list" id="productList"></div>
+    </div>
+
+    <script>
+        async function loadProducts() {
+            const res = await axios.get("http://localhost:3000/products");
+            const productList = document.getElementById("productList");
+            productList.innerHTML = res.data.map(p => 
+                `<div class="product-item">${p.name} - ₹${p.price}
+                    <button onclick="deleteProduct(${p.id})">Delete</button>
+                </div>`
+            ).join("");
+        }
+
+        async function addProduct() {
+            const name = document.getElementById("productName").value.trim();
+            const price = document.getElementById("productPrice").value.trim();
+            const image = document.getElementById("productImage").value.trim();
+            if (!name || !price || !image) return alert("Enter all details!");
+
+            await axios.post("http://localhost:3000/products", { name, price, image });
+            loadProducts();
+        }
+
+        async function deleteProduct(id) {
+            await axios.delete(`http://localhost:3000/products/${id}`);
+            loadProducts();
+        }
+
+        document.addEventListener("DOMContentLoaded", loadProducts);
+    </script>
+</body>
+</html>
