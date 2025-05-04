@@ -1,501 +1,833 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 4K Photo Enhancer</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/upscaler@1.0.0/dist/upscaler.min.js"></script>
-    <style>
-        :root {
-            --primary: #4CAF50;
-            --secondary: #2196F3;
-            --dark: #333;
-            --light: #f5f5f5;
-            --error: #f44336;
-        }
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background: var(--light);
-            color: var(--dark);
-            line-height: 1.6;
-        }
-        h1 {
-            color: var(--primary);
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: clamp(1.8rem, 4vw, 2.5rem);
-        }
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: clamp(1rem, 2vw, 1.2rem);
-        }
-        .drop-area {
-            border: 3px dashed #aaa;
-            border-radius: 15px;
-            padding: 30px;
-            margin: 20px auto;
-            background: white;
-            cursor: pointer;
-            transition: all 0.3s;
-            max-width: 800px;
-        }
-        .drop-area.highlight {
-            border-color: var(--primary);
-            background: #f0fff0;
-            transform: scale(1.01);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        #fileInput {
-            display: none;
-        }
-        .btn {
-            background: var(--primary);
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 1rem;
-            margin: 10px;
-            transition: all 0.3s;
-            font-weight: 600;
-            display: inline-block;
-        }
-        .btn:hover {
-            filter: brightness(1.1);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
-        }
-        .btn-secondary {
-            background: var(--secondary);
-        }
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        .preview-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 30px;
-            margin: 40px 0;
-        }
-        .image-box {
-            flex: 1;
-            min-width: 300px;
-            max-width: 500px;
-            text-align: center;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .image-box h3 {
-            margin-top: 0;
-            color: var(--dark);
-            font-size: 1.3rem;
-        }
-        .image-preview {
-            width: 100%;
-            height: auto;
-            max-height: 400px;
-            object-fit: contain;
-            border-radius: 5px;
-            background: 
-                linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%),
-                linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 10px 10px;
-        }
-        .loading {
-            text-align: center;
-            margin: 30px 0;
-            display: none;
-        }
-        .spinner {
-            border: 5px solid rgba(0,0,0,0.1);
-            border-top: 5px solid var(--primary);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .progress-bar {
-            width: 100%;
-            max-width: 400px;
-            height: 10px;
-            background: #eee;
-            border-radius: 5px;
-            margin: 20px auto;
-            overflow: hidden;
-        }
-        .progress {
-            height: 100%;
-            background: var(--primary);
-            width: 0%;
-            transition: width 0.3s;
-        }
-        .toast {
-            position: fixed;
-            top: 30px;
-            right: 30px;
-            background: var(--primary);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            z-index: 1000;
-            transform: translateY(-100px);
-            opacity: 0;
-            transition: all 0.3s;
-        }
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        .toast.error {
-            background: var(--error);
-        }
-        .model-selector {
-            margin: 20px 0;
-            text-align: center;
-        }
-        .model-btn {
-            background: white;
-            border: 2px solid var(--secondary);
-            color: var(--secondary);
-            padding: 8px 15px;
-            margin: 5px;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-        }
-        .model-btn.active {
-            background: var(--secondary);
-            color: white;
-        }
-        @media (max-width: 768px) {
-            .preview-container {
-                flex-direction: column;
-                align-items: center;
-            }
-            .image-box {
-                width: 100%;
-            }
-            .drop-area {
-                padding: 20px;
-            }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <title>Tooly</title>
+  <!-- Tailwind CSS via UNPKG CDN (pre-built) -->
+  <link
+    href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
+    rel="stylesheet"
+  />
+  <!-- Font Awesome for Icons -->
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    rel="stylesheet"
+  />
+  <!-- Google Font: Quicksand -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Quicksand&display=swap"
+    rel="stylesheet"
+  />
+  <!-- Firebase SDKs - Make sure these load BEFORE your script -->
+  <!-- Add defer if your script is below the body -->
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+  <!-- Optional: Add Firestore or Realtime Database if needed for realtime data beyond auth -->
+  <!-- <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script> -->
+  <!-- <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script> -->
+
+  <style>
+    body {
+      font-family: "Quicksand", sans-serif;
+      background-color: #1a1a1a; /* Dark background */
+      color: #d1d5db; /* Light text color */
+    }
+    header, section {
+      background-color: #2d2d2d; /* Slightly lighter dark for header/section */
+      border-color: #4b5563; /* Gray border */
+    }
+    .tool-card {
+      background-color: #4b5563; /* Gray background for tool cards */
+      border-color: #6b7280; /* Slightly lighter border */
+    }
+    .tool-card:hover {
+      background-color: #6b7280; /* Lighter gray on hover */
+    }
+    /* Styles to manage display based on Firebase state */
+    /* Initially hide logout, show sign-in - JS will handle this */
+    #logoutListItem {
+        display: none; /* Use display: none on the list item */
+    }
+  </style>
 </head>
 <body>
-    <h1>🖼️ AI 4K Photo Enhancer</h1>
-    <p class="subtitle">Transform low-quality images into <strong>4K Ultra HD</strong> with AI magic</p>
-    
-    <div id="dropArea" class="drop-area">
-        <p style="font-size: 1.2rem; margin-bottom: 10px;">📁 Drag & Drop your image here</p>
-        <p>or</p>
-        <button class="btn" onclick="document.getElementById('fileInput').click()">Select Image</button>
-        <input type="file" id="fileInput" accept="image/*">
+  <header
+    class="flex items-center justify-between border-b px-4 py-3 relative"
+  >
+    <button
+      aria-label="Menu"
+      id="menuBtn"
+      class="focus:outline-none z-20 relative"
+      type="button"
+    >
+      <i class="fas fa-bars text-gray-300 text-xl"></i>
+    </button>
+    <h1 class="text-lg font-normal text-gray-300">Tooly</h1>
+    <div class="flex items-center space-x-4">
+      <button
+        aria-label="Search"
+        id="searchBtn"
+        class="focus:outline-none z-20 relative"
+        type="button"
+      >
+        <i class="fas fa-search text-gray-300 text-xl"></i>
+      </button>
+      <button
+        aria-label="More options"
+        id="moreBtn"
+        class="focus:outline-none z-20 relative"
+        type="button"
+      >
+        <i class="fas fa-ellipsis-v text-gray-300 text-xl"></i>
+      </button>
     </div>
-    
-    <div class="model-selector">
-        <p>AI Model: <span id="currentModel">Auto Select (Recommended)</span></p>
-        <div>
-            <button class="model-btn active" onclick="selectModel('auto')">Auto</button>
-            <button class="model-btn" onclick="selectModel('esrgan')">ESRGAN</button>
-            <button class="model-btn" onclick="selectModel('waifu2x')">Waifu2x</button>
-            <button class="model-btn" onclick="selectModel('real-esrgan')">Real-ESRGAN</button>
+
+    <!-- Menu Dropdown -->
+    <div
+      id="menuDropdown"
+      class="hidden absolute top-full left-0 mt-1 w-48 bg-gray-800 border border-gray-600 rounded shadow-lg z-10"
+    >
+      <ul>
+        <li>
+          <button
+            class="w-full text-left px-4 py-2 hover:bg-gray-700 focus:outline-none text-gray-300"
+            type="button"
+            id="homeBtn"
+          >
+            Home
+          </button>
+        </li>
+        <li>
+          <button
+            class="w-full text-left px-4 py-2 hover:bg-gray-700 focus:outline-none text-gray-300"
+            type="button"
+            id="profileBtn"
+          >
+            Profile
+          </button>
+        </li>
+        <li>
+          <button
+            class="w-full text-left px-4 py-2 hover:bg-gray-700 focus:outline-none text-gray-300"
+            type="button"
+            id="settingsBtn"
+          >
+            Settings
+          </button>
+        </li>
+         <!-- Firebase Auth Buttons -->
+        <li id="googleSignInListItem">
+          <button
+            class="w-full text-left px-4 py-2 hover:bg-gray-700 focus:outline-none flex items-center space-x-2 text-gray-300"
+            type="button"
+            id="googleSignInBtn"
+          >
+            <i class="fab fa-google text-red-500"></i>
+            <span>Sign in with Google</span>
+          </button>
+        </li>
+         <li id="logoutListItem"> <!-- Style moved to CSS -->
+          <button
+            class="w-full text-left px-4 py-2 hover:bg-gray-700 focus:outline-none text-gray-300"
+            type="button"
+            id="logoutBtn"
+          >
+            Logout
+          </button>
+        </li>
+         <!-- End Firebase Auth Buttons -->
+      </ul>
+    </div>
+
+    <!-- Search Dropdown -->
+    <div
+      id="searchDropdown"
+      class="hidden absolute top-full right-16 mt-1 w-64 bg-gray-800 border border-gray-600 rounded shadow-lg z-10 p-2"
+    >
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="Search tools..."
+        class="w-full border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-gray-300"
+      />
+      <ul id="searchResults" class="mt-2 max-h-48 overflow-auto text-gray-300"></ul>
+    </div>
+
+    <!-- More Options Dropdown -->
+    <div
+      id="moreDropdown"
+      class="hidden absolute top-full right-0 mt-1 w-40 bg-gray-800 border border-gray-600 rounded shadow-lg z-10"
+    >
+      <ul>
+        <li>
+          <button
+            class="w-full text-left px-4 py-2 hover:bg-gray-700 focus:outline-none text-gray-300"
+            type="button"
+            id="aboutBtn"
+          >
+            About
+          </button>
+        </li>
+        <li>
+          <button
+            class="w-full text-left px-4 py-2 hover:bg-gray-700 focus:outline-none text-gray-300"
+            type="button"
+            id="helpBtn"
+          >
+            Help
+          </button>
+        </li>
+        <li>
+          <button
+            class="w-full text-left px-4 py-2 hover:bg-gray-700 focus:outline-none text-gray-300"
+            type="button"
+            id="connectBtn"
+          >
+            Connect (Check Auth State)
+          </button>
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Info section with dismiss option -->
+  <section id="infoSection" class="flex border-b px-4 py-3 space-x-3">
+    <img
+      alt="Robot icon with antenna and smiling face waving hand"
+      class="w-20 h-20 flex-shrink-0"
+      height="80"
+      src="https://storage.googleapis.com/a1aa/image/1311e15f-0f5b-4bd0-6d9d-5d225561a35f.jpg"
+      width="80"
+    />
+    <p class="text-gray-400 text-sm leading-relaxed max-w-[calc(100%-80px)]">
+      Hello! I hope you find this app useful. There are more than +100 tools,
+      and more are coming soon.
+    </p>
+    <div class="flex items-center space-x-1 ml-auto flex-col justify-between">
+      <button id="dismissInfoBtn" class="text-gray-500 hover:text-gray-300 focus:outline-none text-sm">Dismiss</button>
+      <div class="flex items-center space-x-1 mt-auto">
+         <span class="w-3 h-3 rounded-full bg-gray-300"></span>
+         <span class="w-2 h-2 rounded-full bg-gray-600"></span>
+         <span class="w-2 h-2 rounded-full bg-gray-600"></span>
+      </div>
+    </div>
+  </section>
+  <!-- End Info section -->
+
+
+  <main class="p-3 space-y-3">
+    <div class="grid grid-cols-2 gap-3">
+      <div
+        class="tool-card rounded-lg border flex flex-col items-center justify-center py-6 space-y-2 cursor-pointer"
+        tabindex="0"
+        role="button"
+        aria-label="Text Tools"
+        id="textToolsBtn"
+      >
+        <div class="relative">
+          <img
+            alt="Black text icon with yellow glow behind"
+            class="relative z-10"
+            height="40"
+            src="https://storage.googleapis.com/a1aa/image/28c503b1-20fd-4627-10ee-b34281845d03.jpg"
+            width="40"
+          />
+          <div
+            class="absolute inset-0 rounded-md bg-yellow-400 opacity-70 blur-[8px] -z-10"
+          ></div>
         </div>
-    </div>
-    
-    <div class="preview-container">
-        <div class="image-box">
-            <h3>Original Image</h3>
-            <img id="originalImg" class="image-preview" src="" alt="Original" style="display: none;">
-            <p id="originalRes">Resolution: -</p>
+        <span class="text-gray-300 text-base">Text Tools</span>
+      </div>
+      <div
+        class="tool-card rounded-lg border flex flex-col items-center justify-center py-6 space-y-2 cursor-pointer"
+        tabindex="0"
+        role="button"
+        aria-label="Image Tools"
+        id="imageToolsBtn"
+      >
+        <div class="relative">
+          <img
+            alt="Black image icon with blue glow behind"
+            class="relative z-10"
+            height="40"
+            src="https://storage.googleapis.com/a1aa/image/f02b2335-78ac-4b34-438d-10c1921ade4a.jpg"
+            width="40"
+          />
+          <div
+            class="absolute inset-0 rounded-md bg-blue-600 opacity-70 blur-[8px] -z-10"
+          ></div>
         </div>
-        <div class="image-box">
-            <h3>4K Enhanced</h3>
-            <img id="enhancedImg" class="image-preview" src="" alt="Enhanced" style="display: none;">
-            <p id="enhancedRes">Resolution: -</p>
+        <span class="text-gray-300 text-base">Image Tools</span>
+      </div>
+      <div
+        class="tool-card rounded-lg border flex flex-col items-center justify-center py-6 space-y-2 cursor-pointer"
+        tabindex="0"
+        role="button"
+        aria-label="Calculation Tools"
+        id="calculationToolsBtn"
+      >
+        <div class="relative">
+          <img
+            alt="Black calculator icon with red glow behind"
+            class="relative z-10"
+            height="40"
+            src="https://storage.googleapis.com/a1aa/image/65c7ac36-4ec8-4d8c-0b68-3449d1f6599a.jpg"
+            width="40"
+          />
+          <div
+            class="absolute inset-0 rounded-md bg-red-500 opacity-70 blur-[8px] -z-10"
+          ></div>
         </div>
-    </div>
-    
-    <div style="text-align: center;">
-        <button id="enhanceBtn" class="btn btn-secondary" style="display: none;">Enhance to 4K</button>
-        <button id="downloadBtn" class="btn" style="display: none;">Download 4K Image</button>
-    </div>
-    
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <p id="loadingText">Loading AI model...</p>
-        <div class="progress-bar">
-            <div class="progress" id="progressBar"></div>
+        <span class="text-gray-300 text-base">Calculation Tools</span>
+      </div>
+      <div
+        class="tool-card rounded-lg border flex flex-col items-center justify-center py-6 space-y-2 cursor-pointer"
+        tabindex="0"
+        role="button"
+        aria-label="Unit Converter"
+        id="unitConverterBtn"
+      >
+        <div class="relative">
+          <img
+            alt="Black unit converter icon with purple glow behind"
+            class="relative z-10"
+            height="40"
+            src="https://storage.googleapis.com/a1aa/image/59e7014c-d31f-4637-fd87-9a875504b37d.jpg"
+            width="40"
+          />
+          <div
+            class="absolute inset-0 rounded-md bg-purple-700 opacity-70 blur-[8px] -z-10"
+          ></div>
         </div>
+        <span class="text-gray-300 text-base">Unit Converter</span>
+      </div>
+      <div
+        class="tool-card rounded-lg border flex flex-col items-center justify-center py-6 space-y-2 cursor-pointer"
+        tabindex="0"
+        role="button"
+        aria-label="Development Tools"
+        id="developmentToolsBtn"
+      >
+        <div class="relative">
+          <img
+            alt="Black code brackets icon with teal glow behind"
+            class="relative z-10"
+            height="40"
+            src="https://storage.googleapis.com/a1aa/image/d8011cdd-858c-4445-a9ac-2b3a8e571a6c.jpg"
+            width="40"
+          />
+          <div
+            class="absolute inset-0 rounded-md bg-cyan-400 opacity-70 blur-[8px] -z-10"
+          ></div>
+        </div>
+        <span class="text-gray-300 text-base">Development Tools</span>
+      </div>
+      <div
+        class="tool-card rounded-lg border flex flex-col items-center justify-center py-6 space-y-2 cursor-pointer"
+        tabindex="0"
+        role="button"
+        aria-label="Colors Tools"
+        id="colorsToolsBtn"
+      >
+        <div class="relative">
+          <img
+            alt="Black paint palette icon with orange glow behind"
+            class="relative z-10"
+            height="40"
+            src="https://storage.googleapis.com/a1aa/image/d4edbf04-250d-450d-0c67-6591bc82a7ca.jpg"
+            width="40"
+          />
+          <div
+            class="absolute inset-0 rounded-md bg-orange-500 opacity-70 blur-[8px] -z-10"
+          ></div>
+        </div>
+        <span class="text-gray-300 text-base">Colors Tools</span>
+      </div>
     </div>
-    
-    <div id="toast" class="toast"></div>
-    
-    <script>
-        // Elements
-        const dropArea = document.getElementById('dropArea');
-        const fileInput = document.getElementById('fileInput');
-        const originalImg = document.getElementById('originalImg');
-        const enhancedImg = document.getElementById('enhancedImg');
-        const enhanceBtn = document.getElementById('enhanceBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const loading = document.getElementById('loading');
-        const toast = document.getElementById('toast');
-        const progressBar = document.getElementById('progressBar');
-        const loadingText = document.getElementById('loadingText');
-        const originalRes = document.getElementById('originalRes');
-        const enhancedRes = document.getElementById('enhancedRes');
-        const currentModelText = document.getElementById('currentModel');
-        
-        // Variables
-        let selectedModel = 'auto';
-        let enhancedImageUrl = null;
-        let originalImageData = null;
-        
-        // Initialize TensorFlow.js
-        async function initTF() {
-            loading.style.display = 'block';
-            loadingText.textContent = "Loading AI engine...";
-            
-            try {
-                await tf.ready();
-                console.log("TensorFlow.js loaded successfully");
-                loading.style.display = 'none';
-            } catch (error) {
-                showError("Failed to load AI engine. Please refresh.");
-                console.error("TensorFlow error:", error);
-            }
+  </main>
+
+  <script>
+    // Ensure script runs after DOM and Firebase scripts are loaded
+    document.addEventListener("DOMContentLoaded", function () {
+
+      // --- Firebase Configuration & Initialization ---
+
+      // Your Firebase project configuration - Updated with your details
+      const firebaseConfig = {
+        apiKey: "AIzaSyD6EXA7D77rQDQEohB52BvTYimFeTEaAho",
+        authDomain: "rn-gfx-tool.firebaseapp.com", // Derived from project ID
+        databaseURL: "https://rn-gfx-tool-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "rn-gfx-tool",
+        storageBucket: "rn-gfx-tool.firebasestorage.app",
+        messagingSenderId: "163149358541",
+        // Note: This appId (1:...) looks like an Android appId. For a web app,
+        // it's recommended to use the config generated for a Web app in Firebase console.
+        // However, Authentication should still work with this config.
+        appId: "1:163149358541:android:2ef6d22fcd23e77ee09084"
+      };
+
+      // Check if Firebase SDKs loaded BEFORE attempting to initialize
+      // Check for both firebase (app) and firebase.auth service availability
+      if (typeof firebase === "undefined" || typeof firebase.auth === "undefined") {
+          console.error("Firebase SDK(s) failed to load. This is often a network issue.");
+          alert("Firebase SDK failed to load. Please check your internet connection and try again. (Details: SDK files not found)");
+          // Hide auth-dependent elements gracefully if SDKs failed to load
+           const googleSignInListItem = document.getElementById("googleSignInListItem");
+           const logoutListItem = document.getElementById("logoutListItem");
+           const connectBtn = document.getElementById("connectBtn"); // Assuming connect checks auth
+           if(googleSignInListItem) googleSignInListItem.style.display = 'none';
+           if(logoutListItem) logoutListItem.style.display = 'none';
+           if(connectBtn) {
+               connectBtn.textContent = 'Auth Unavailable';
+               connectBtn.disabled = true;
+           }
+          // We return here because Firebase functionality cannot be used.
+          return;
+      }
+
+
+      let auth;
+      try {
+        // Initialize Firebase if it hasn't been already
+        // This check is important if your script might be included multiple times
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+            console.log("Firebase app initialized with provided config.");
+        } else {
+             console.log("Firebase app already initialized.");
         }
-        
-        // Initialize on page load
-        initTF();
-        
-        // Model selection
-        function selectModel(model) {
-            selectedModel = model;
-            currentModelText.textContent = model === 'auto' ? 'Auto Select (Recommended)' : 
-                                          model === 'esrgan' ? 'ESRGAN (General Purpose)' :
-                                          model === 'waifu2x' ? 'Waifu2x (Anime/Art)' :
-                                          'Real-ESRGAN (Photos)';
-            
-            // Update active button
-            document.querySelectorAll('.model-btn').forEach(btn => {
-                btn.classList.remove('active');
+        // Get the Auth service instance - This will only succeed if firebase.auth SDK was loaded
+        auth = firebase.auth();
+        console.log("Firebase Auth service obtained.");
+      } catch (error) {
+        console.error("Firebase initialization error:", error);
+        // This alert handles errors specifically during the initializeApp call.
+        alert("Failed to initialize Firebase services: " + error.message);
+        // Hide auth-dependent elements gracefully if initialization fails
+         const googleSignInListItem = document.getElementById("googleSignInListItem");
+         const logoutListItem = document.getElementById("logoutListItem");
+         const connectBtn = document.getElementById("connectBtn");
+         if(googleSignInListItem) googleSignInListItem.style.display = 'none';
+         if(logoutListItem) logoutListItem.style.display = 'none';
+          if(connectBtn) {
+              connectBtn.textContent = 'Auth Unavailable';
+              connectBtn.disabled = true;
+          }
+        // We return here as auth is essential for many parts of the script.
+        return;
+      }
+
+
+      // --- Element Selection (Repeat selection if elements might be needed after early return) ---
+      // Select elements required for basic UI and auth even if auth fails
+      const menuBtn = document.getElementById("menuBtn");
+      const searchBtn = document.getElementById("searchBtn");
+      const moreBtn = document.getElementById("moreBtn");
+
+      const menuDropdown = document.getElementById("menuDropdown");
+      const searchDropdown = document.getElementById("searchDropdown");
+      const moreDropdown = document.getElementById("moreDropdown");
+
+      const searchInput = document.getElementById("searchInput");
+      const searchResults = document.getElementById("searchResults");
+
+      // Buttons in Menu Dropdown
+      const homeBtn = document.getElementById("homeBtn");
+      const profileBtn = document.getElementById("profileBtn");
+      const settingsBtn = document.getElementById("settingsBtn");
+      const googleSignInBtn = document.getElementById("googleSignInBtn");
+      const logoutBtn = document.getElementById("logoutBtn"); // Now in Menu dropdown
+      // Get list items again just to be safe after potential early returns
+      const googleSignInListItem = document.getElementById("googleSignInListItem");
+      const logoutListItem = document.getElementById("logoutListItem");
+
+
+      // Buttons in More Options Dropdown
+      const aboutBtn = document.getElementById("aboutBtn");
+      const helpBtn = document.getElementById("helpBtn");
+      // Get connect button again
+      const connectBtn = document.getElementById("connectBtn");
+
+      // Main Tools Buttons (assuming these don't strictly require login, adjust if needed)
+      const textToolsBtn = document.getElementById("textToolsBtn");
+      const imageToolsBtn = document.getElementById("imageToolsBtn");
+      const calculationToolsBtn = document.getElementById("calculationToolsBtn");
+      const unitConverterBtn = document.getElementById("unitConverterBtn");
+      const developmentToolsBtn = document.getElementById("developmentToolsBtn");
+      const colorsToolsBtn = document.getElementById("colorsToolsBtn");
+
+      // Info Section & Dismiss Button
+      const infoSection = document.getElementById("infoSection");
+      const dismissInfoBtn = document.getElementById("dismissInfoBtn");
+
+      // Sample tools for search
+      const tools = [
+        "Text Tools",
+        "Image Tools",
+        "Calculation Tools",
+        "Unit Converter",
+        "Development Tools",
+        "Colors Tools",
+      ];
+
+      // --- Local Storage Functionality ---
+      const INFO_SECTION_DISMISSED_KEY = "toolyInfoDismissed";
+
+      // Function to check local storage and hide info section on load
+      function loadInfoSectionState() {
+          try {
+              const dismissed = localStorage.getItem(INFO_SECTION_DISMISSED_KEY);
+              if (dismissed === "true" && infoSection) {
+                  infoSection.style.display = 'none';
+                  console.log("Info section hidden based on local storage.");
+              } else {
+                  if(infoSection) infoSection.style.display = 'flex'; // Ensure it's visible by default if not dismissed
+                  console.log("Info section shown or local storage state not found.");
+              }
+          } catch (e) {
+              console.error("Could not access localStorage:", e);
+              // Handle cases where localStorage might not be available (e.g., strict privacy settings)
+              if(dismissInfoBtn) dismissInfoBtn.style.display = 'none'; // Hide dismiss button if localStorage isn't working
+          }
+      }
+
+      // Function to save info section state to local storage
+      function saveInfoSectionDismissed() {
+          try {
+              localStorage.setItem(INFO_SECTION_DISMISSED_KEY, "true");
+              console.log("Info section dismissed state saved to local storage.");
+          } catch (e) {
+              console.error("Could not save to localStorage:", e);
+          }
+      }
+
+      // Event listener for the dismiss button
+      if (dismissInfoBtn && infoSection) {
+          dismissInfoBtn.addEventListener("click", () => {
+              saveInfoSectionDismissed();
+              infoSection.style.display = 'none';
+          });
+      }
+
+      // Load the info section state when the DOM is ready
+      loadInfoSectionState();
+
+
+      // --- Firebase Authentication State Listener ---
+      // This function runs every time the user's sign-in state changes
+      // (e.g., signs in, signs out, token expires)
+      // This will only be attached if 'auth' was successfully initialized.
+      if (auth) { // Check again to ensure auth is available before adding listener
+          auth.onAuthStateChanged(function(user) {
+            if (user) {
+              // User is signed in
+              console.log("User is signed in:", user.email, "(UID:", user.uid, ")");
+              // Update UI: Hide Sign-in, Show Logout
+              if(googleSignInListItem) googleSignInListItem.style.display = 'none';
+              if(logoutListItem) logoutListItem.style.display = 'block';
+              // You could also update profileBtn text or show user avatar
+              // if(profileBtn) profileBtn.textContent = `Profile (${user.displayName || user.email})`;
+
+              // Example: If you had content that only signed-in users can see, show it here.
+              // const signedInContent = document.getElementById('signedInContent');
+              // if(signedInContent) signedInContent.style.display = 'block';
+
+            } else {
+              // User is signed out
+              console.log("User is signed out.");
+              // Update UI: Show Sign-in, Hide Logout
+              if(googleSignInListItem) googleSignInListItem.style.display = 'block';
+              if(logoutListItem) logoutListItem.style.display = 'none';
+              // Reset profileBtn text if you changed it
+              // if(profileBtn) profileBtn.textContent = 'Profile';
+
+              // Example: Hide content only for signed-in users.
+              // const signedInContent = document.getElementById('signedInContent');
+              // if(signedInContent) signedInContent.style.display = 'none';
+            }
+          });
+      }
+
+
+      // --- Dropdown Toggle and Search Logic ---
+      // Toggle function to close others
+      function toggleDropdown(dropdown) {
+        const isHidden = dropdown && dropdown.classList.contains("hidden"); // Check if dropdown exists
+        closeAllDropdowns(); // Close all others first
+        if (isHidden) {
+          dropdown.classList.remove("hidden");
+          if (dropdown === searchDropdown && searchInput) { // Check if searchInput exists
+            searchInput.focus();
+            // No need to filterSearchResults("") immediately unless you want to show all tools on search open
+            // filterSearchResults("");
+          }
+        }
+      }
+
+      // Close all dropdowns
+      function closeAllDropdowns() {
+        if(menuDropdown) menuDropdown.classList.add("hidden");
+        if(searchDropdown) searchDropdown.classList.add("hidden");
+        if(moreDropdown) moreDropdown.classList.add("hidden");
+      }
+
+      // Event listeners for header buttons to toggle dropdowns
+      // Add checks to ensure buttons exist before adding listeners
+      if(menuBtn) menuBtn.addEventListener("click", () => toggleDropdown(menuDropdown));
+      if(searchBtn) searchBtn.addEventListener("click", () => toggleDropdown(searchDropdown));
+      if(moreBtn) moreBtn.addEventListener("click", () => toggleDropdown(moreDropdown));
+
+      // Close dropdowns if clicked outside (Improved to exclude clicking inside dropdowns)
+      document.addEventListener("click", (e) => {
+        // Check if the click was outside all dropdowns and their respective buttons
+        const isClickInsideDropdown = (menuDropdown && menuDropdown.contains(e.target)) || (searchDropdown && searchDropdown.contains(e.target)) || (moreDropdown && moreDropdown.contains(e.target));
+        const isClickOnButton = (menuBtn && menuBtn.contains(e.target)) || (searchBtn && searchBtn.contains(e.target)) || (moreBtn && moreBtn.contains(e.target));
+
+        if (!isClickInsideDropdown && !isClickOnButton) {
+          closeAllDropdowns();
+        }
+      });
+
+
+      // Search filter function
+      function filterSearchResults(query) {
+        const filtered = tools.filter((tool) =>
+          tool.toLowerCase().includes(query.toLowerCase())
+        );
+        if(searchResults) searchResults.innerHTML = ""; // Clear previous results
+        else return; // Exit if searchResults element not found
+
+        if (filtered.length === 0 && query.length > 0) { // Show "No results" only if there's a query
+          searchResults.innerHTML =
+            '<li class="px-2 py-1 text-gray-500">No results found</li>';
+          return;
+        }
+         if (filtered.length === 0 && query.length === 0) { // Show nothing if query is empty and list is empty
+             return;
+         }
+
+        filtered.forEach((tool) => {
+          const li = document.createElement("li");
+          li.textContent = tool;
+          li.className = "px-2 py-1 cursor-pointer hover:bg-gray-700 rounded";
+          li.tabIndex = 0; // Make it focusable
+          li.setAttribute("role", "button");
+          li.addEventListener("click", () => {
+            alert(`${tool} clicked (Navigation not implemented)`); // Replace with actual tool page navigation
+            if(searchInput) searchInput.value = tool; // Optional: Set search input to selected tool
+            closeAllDropdowns();
+          });
+           li.addEventListener("keydown", (e) => {
+             if (e.key === "Enter") {
+                alert(`${tool} clicked (Navigation not implemented)`); // Replace with actual tool page navigation
+                 if(searchInput) searchInput.value = tool; // Optional: Set search input to selected tool
+                closeAllDropdowns();
+             }
+           });
+          searchResults.appendChild(li);
+        });
+      }
+
+      // Search input event
+      if(searchInput) {
+          searchInput.addEventListener("input", (e) => {
+            filterSearchResults(e.target.value);
+          });
+      }
+
+
+      // --- Firebase Authentication Button Actions ---
+
+      // Google Sign-In Button - Only add listener if auth is available and button exists
+      if (auth && googleSignInBtn) {
+        googleSignInBtn.addEventListener("click", () => {
+          closeAllDropdowns(); // Close menu dropdown immediately
+          const provider = new firebase.auth.GoogleAuthProvider();
+          // Request a refresh token if the user already signed in before
+          provider.setCustomParameters({
+            prompt: 'select_account' // Forces account selection
+          });
+          auth.signInWithPopup(provider)
+            .then((result) => {
+              // This block runs AFTER the user successfully signs in.
+              // The onAuthStateChanged listener will handle UI updates automatically.
+              const user = result.user;
+              console.log("User signed in via Google:", user);
+              alert(`Welcome, ${user.displayName || user.email}!`);
+            })
+            .catch((error) => {
+              // Handle Errors here.
+              console.error("Google Sign-In Error:", error);
+              const errorMessage = error.message;
+               // Check for specific auth error codes if needed (e.g., popup-closed-by-user)
+               if (error.code === 'auth/popup-closed-by-user') {
+                   console.log('Sign-in popup was closed by the user.');
+                   // No need to show alert for this common scenario
+               } else {
+                  alert(`Sign-in failed: ${errorMessage}`);
+               }
             });
-            event.target.classList.add('active');
-        }
-        
-        // File handling
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
         });
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropArea.addEventListener(eventName, highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, unhighlight, false);
-        });
-        
-        dropArea.addEventListener('drop', handleDrop, false);
-        fileInput.addEventListener('change', handleFiles, false);
-        enhanceBtn.addEventListener('click', enhanceImage);
-        downloadBtn.addEventListener('click', downloadEnhancedImage);
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
+      } else if (googleSignInBtn) {
+           // If auth was not available but button exists, disable it or provide feedback
+           googleSignInBtn.textContent = 'Auth Unavailable';
+           googleSignInBtn.disabled = true;
+           googleSignInBtn.parentElement.title = 'Firebase Authentication is not available.';
+      }
+
+
+      // Logout Button - Only add listener if auth is available and button exists
+      // Note: This button is now in the Menu dropdown (#menuDropdown)
+      if (auth && logoutBtn) {
+          logoutBtn.addEventListener("click", () => {
+             closeAllDropdowns(); // Close menu dropdown immediately
+            auth.signOut()
+              .then(() => {
+                // This block runs AFTER the user successfully signs out.
+                // The onAuthStateChanged listener will handle UI updates automatically.
+                console.log("User successfully signed out.");
+                alert("Logged out successfully.");
+              })
+              .catch((error) => {
+                // An error happened during logout.
+                console.error("Logout Error:", error);
+                alert(`Logout failed: ${error.message}`);
+              });
+          });
+      }
+
+
+      // Connect Button (Example of checking current auth state) - Only add listener if auth is available and button exists
+      // Note: This button is in the More Options dropdown (#moreDropdown)
+      if (auth && connectBtn) {
+          connectBtn.addEventListener("click", () => {
+              const user = auth.currentUser; // Get the currently signed-in user
+              if (user) {
+                // User is signed in
+                alert(`Connected as ${user.displayName || user.email} (UID: ${user.uid})`);
+                console.log("Current User Info:", user);
+              } else {
+                // No user is signed in
+                alert("Not connected to Firebase. Please sign in.");
+                console.log("No user is currently signed in.");
+              }
+               closeAllDropdowns(); // Close more options after action
+          });
+      } else if (connectBtn) {
+           // If auth was not available but button exists, disable it or provide feedback
+            connectBtn.textContent = 'Auth Unavailable';
+            connectBtn.disabled = true;
+            connectBtn.parentElement.title = 'Firebase Authentication is not available.';
+      }
+
+
+      // --- Other Menu Button Actions (Existing URL navigation) ---
+      if(homeBtn) homeBtn.addEventListener("click", () => {
+        // window.location.href = "/home"; // Replace with actual URL
+        alert("Home button clicked (Navigation not implemented)");
+        closeAllDropdowns(); // Close menu after action
+      });
+      if(profileBtn) profileBtn.addEventListener("click", () => {
+        // window.location.href = "/profile"; // Replace with actual URL - might depend on auth state
+        alert("Profile button clicked (Navigation not implemented)");
+        closeAllDropdowns(); // Close menu after action
+      });
+      if(settingsBtn) settingsBtn.addEventListener("click", () => {
+        // window.location.href = "/settings"; // Replace with actual URL - might depend on auth state
+        alert("Settings button clicked (Navigation not implemented)");
+         closeAllDropdowns(); // Close menu after action
+      });
+
+
+      // --- More Options Button Actions (Existing URL navigation) ---
+      if(aboutBtn) aboutBtn.addEventListener("click", () => {
+         // window.location.href = "/about"; // Replace with actual URL
+         alert("About button clicked (Navigation not implemented)");
+          closeAllDropdowns(); // Close more options after action
+       });
+      if(helpBtn) helpBtn.addEventListener("click", () => {
+          // window.location.href = "/help"; // Replace with actual URL
+          alert("Help button clicked (Navigation not implemented)");
+           closeAllDropdowns(); // Close more options after action
+       });
+
+
+      // --- Main Tools Button Actions (Existing URL navigation) ---
+      // Add checks for main tool buttons as well
+      if(textToolsBtn) textToolsBtn.addEventListener("click", () => {
+        // window.location.href = "/text-tools"; // Replace with actual URL
+         alert("Text Tools clicked (Navigation not implemented)");
+      });
+      if(textToolsBtn) textToolsBtn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+           // window.location.href = "/text-tools";
+           alert("Text Tools clicked (Navigation not implemented)");
         }
-        
-        function highlight() {
-            dropArea.classList.add('highlight');
+      });
+
+      if(imageToolsBtn) imageToolsBtn.addEventListener("click", () => {
+        // window.location.href = "/image-tools"; // Replace with actual URL
+        alert("Image Tools clicked (Navigation not implemented)");
+      });
+       if(imageToolsBtn) imageToolsBtn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            // window.location.href = "/image-tools";
+            alert("Image Tools clicked (Navigation not implemented)");
         }
-        
-        function unhighlight() {
-            dropArea.classList.remove('highlight');
+      });
+
+      if(calculationToolsBtn) calculationToolsBtn.addEventListener("click", () => {
+        // window.location.href = "/calculation-tools"; // Replace with actual URL
+        alert("Calculation Tools clicked (Navigation not implemented)");
+      });
+      if(calculationToolsBtn) calculationToolsBtn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+           // window.location.href = "/calculation-tools";
+           alert("Calculation Tools clicked (Navigation not implemented)");
         }
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles({ target: { files } });
+      });
+
+      if(unitConverterBtn) unitConverterBtn.addEventListener("click", () => {
+        // window.location.href = "/unit-converter"; // Replace with actual URL
+        alert("Unit Converter clicked (Navigation not implemented)");
+      });
+      if(unitConverterBtn) unitConverterBtn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          // window.location.href = "/unit-converter";
+          alert("Unit Converter clicked (Navigation not implemented)");
         }
-        
-        function handleFiles(e) {
-            const files = e.target.files;
-            if (files.length && files[0].type.startsWith('image/')) {
-                const file = files[0];
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    originalImg.src = e.target.result;
-                    originalImg.style.display = 'block';
-                    enhanceBtn.style.display = 'inline-block';
-                    downloadBtn.style.display = 'none';
-                    enhancedImg.style.display = 'none';
-                    
-                    // Get image dimensions
-                    const img = new Image();
-                    img.onload = function() {
-                        originalRes.textContent = `Resolution: ${img.width}×${img.height}`;
-                        originalImageData = {
-                            src: e.target.result,
-                            width: img.width,
-                            height: img.height
-                        };
-                    };
-                    img.src = e.target.result;
-                };
-                
-                reader.readAsDataURL(file);
-            }
+      });
+
+      if(developmentToolsBtn) developmentToolsBtn.addEventListener("click", () => {
+        // window.location.href = "/development-tools"; // Replace with actual URL
+         alert("Development Tools clicked (Navigation not implemented)");
+      });
+      if(developmentToolsBtn) developmentToolsBtn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          // window.location.href = "/development-tools";
+           alert("Development Tools clicked (Navigation not implemented)");
         }
-        
-        // Main enhancement function
-        async function enhanceImage() {
-            if (!originalImg.src) return;
-            
-            loading.style.display = 'block';
-            enhanceBtn.disabled = true;
-            progressBar.style.width = '0%';
-            
-            try {
-                // Determine best model if auto-selected
-                const modelToUse = selectedModel === 'auto' ? 
-                    (originalImageData.width < 500 ? 'real-esrgan' : 'esrgan') : 
-                    selectedModel;
-                
-                loadingText.textContent = `Enhancing with ${modelToUse.toUpperCase()}...`;
-                
-                // Simulate progress (in real app, this would be actual progress)
-                simulateProgress();
-                
-                // In a real implementation, you would:
-                // 1. Load the appropriate AI model
-                // 2. Process the image
-                // 3. Return the enhanced version
-                
-                // For this demo, we'll simulate the enhancement
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                
-                // Create a canvas with 4x resolution
-                const canvas = document.createElement('canvas');
-                canvas.width = originalImageData.width * 4;
-                canvas.height = originalImageData.height * 4;
-                const ctx = canvas.getContext('2d');
-                
-                // Draw original image (scaled up)
-                const img = new Image();
-                await new Promise((resolve) => {
-                    img.onload = resolve;
-                    img.src = originalImageData.src;
-                });
-                
-                ctx.imageSmoothingEnabled = true;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                // Apply some simple enhancements for demo purposes
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-                
-                // Simple sharpening and contrast adjustment
-                for (let i = 0; i < data.length; i += 4) {
-                    // Increase contrast slightly
-                    data[i] = clamp(data[i] * 1.1);
-                    data[i+1] = clamp(data[i+1] * 1.1);
-                    data[i+2] = clamp(data[i+2] * 1.1);
-                    
-                    // Mild sharpening
-                    if (i > 0) {
-                        data[i] = clamp(data[i] * 0.8 + data[i-4] * 0.2);
-                        data[i+1] = clamp(data[i+1] * 0.8 + data[i-3] * 0.2);
-                        data[i+2] = clamp(data[i+2] * 0.8 + data[i-2] * 0.2);
-                    }
-                }
-                
-                ctx.putImageData(imageData, 0, 0);
-                
-                // Get the enhanced image
-                enhancedImageUrl = canvas.toDataURL('image/png');
-                enhancedImg.src = enhancedImageUrl;
-                enhancedImg.style.display = 'block';
-                enhancedRes.textContent = `Resolution: ${canvas.width}×${canvas.height}`;
-                downloadBtn.style.display = 'inline-block';
-                
-                showToast(`✅ Enhanced to 4K using ${modelToUse.toUpperCase()}`);
-            } catch (error) {
-                console.error("Enhancement error:", error);
-                showError("Enhancement failed. Try a different image or model.");
-            } finally {
-                loading.style.display = 'none';
-                enhanceBtn.disabled = false;
-                progressBar.style.width = '0%';
-            }
+      });
+
+      if(colorsToolsBtn) colorsToolsBtn.addEventListener("click", () => {
+        // window.location.href = "/colors-tools"; // Replace with actual URL
+         alert("Colors Tools clicked (Navigation not implemented)");
+      });
+      if(colorsToolsBtn) colorsToolsBtn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+           // window.location.href = "/colors-tools";
+           alert("Colors Tools clicked (Navigation not implemented)");
         }
-        
-        function simulateProgress() {
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.random() * 10;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(interval);
-                }
-                progressBar.style.width = `${progress}%`;
-            }, 200);
-        }
-        
-        function clamp(value) {
-            return Math.min(255, Math.max(0, value));
-        }
-        
-        function downloadEnhancedImage() {
-            if (!enhancedImageUrl) return;
-            
-            const link = document.createElement('a');
-            link.href = enhancedImageUrl;
-            link.download = `4k-enhanced-${Date.now()}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-        
-        function showToast(message, isError = false) {
-            toast.textContent = message;
-            toast.className = isError ? 'toast error show' : 'toast show';
-            setTimeout(() => {
-                toast.className = toast.className.replace('show', '');
-            }, 3000);
-        }
-        
-        function showError(message) {
-            showToast(message, true);
-        }
-    </script>
+      });
+
+      // --- Initial State Setup ---
+      // The onAuthStateChanged listener runs once on page load to set the initial state,
+      // so no explicit initial show/hide is strictly necessary here,
+      // but setting a default 'display: none;' in CSS for logoutListItem
+      // is good practice. We added this in the <style> block.
+
+    }); // End DOMContentLoaded
+  </script>
 </body>
 </html>
